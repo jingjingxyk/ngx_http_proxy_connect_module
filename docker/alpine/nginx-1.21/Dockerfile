@@ -74,6 +74,9 @@ pcre-dev \
 zlib-dev \
 jansson-dev \
 make
+
+RUN apk add iproute2 procps  net-tools
+
 COPY --from=0 /usr/local/lib/  /usr/local/lib/
 ENV PATH=$PATH:/usr/local/lib
 WORKDIR /
