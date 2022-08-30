@@ -66,6 +66,7 @@ ADD nginx.conf /usr/local/nginx/nginx.conf
 
 FROM alpine:3.16
 
+RUN test -f /etc/apk/repositories.save || cp -f /etc/apk/repositories /etc/apk/repositories.save
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
 &&  apk update && apk add  --no-cache ca-certificates \
 libc-dev \
@@ -75,7 +76,7 @@ zlib-dev \
 jansson-dev \
 make
 
-RUN apk add iproute2 procps  net-tools
+RUN apk add iproute2 procps  net-tools bind-tools
 
 COPY --from=0 /usr/local/lib/  /usr/local/lib/
 ENV PATH=$PATH:/usr/local/lib
