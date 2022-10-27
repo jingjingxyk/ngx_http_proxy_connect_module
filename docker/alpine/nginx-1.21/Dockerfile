@@ -76,7 +76,7 @@ zlib-dev \
 jansson-dev \
 make
 
-RUN apk add iproute2 procps  net-tools bind-tools
+# RUN apk add iproute2 procps  net-tools bind-tools nftables ipset ipvsadm
 
 COPY --from=0 /usr/local/lib/  /usr/local/lib/
 ENV PATH=$PATH:/usr/local/lib
