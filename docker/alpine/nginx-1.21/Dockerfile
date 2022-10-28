@@ -40,7 +40,7 @@ RUN patch -p1 < /ngx_http_proxy_connect_module/patch/proxy_connect_rewrite_10210
 RUN ./configure \
         --prefix=/usr/local/nginx \
         --sbin-path=/usr/local/nginx/nginx \
-        --conf-path=/usr/local/nginx/nginx.conf \
+        --conf-path=/usr/local/nginx/etc/nginx.conf \
         --pid-path=/usr/local/nginx/nginx.pid \
         --with-http_ssl_module \
         --with-http_stub_status_module \
@@ -61,7 +61,10 @@ RUN ./configure \
 
 WORKDIR /
 ENV PATH=$PATH:/usr/local/nginx/
-ADD nginx.conf /usr/local/nginx/nginx.conf
+RUN mkdir -p /usr/local/nginx/etc/conf.d/
+
+ADD ./etc/nginx.conf /usr/local/nginx/etc/nginx.conf
+ADD ./etc/conf.d/default.conf /usr/local/nginx/etc/conf.d/default.conf
 
 
 FROM alpine:3.16
@@ -89,7 +92,7 @@ RUN addgroup -g 101 -S nginx \
 
 WORKDIR /
 ENV PATH=$PATH:/usr/local/nginx/
-ADD nginx.conf /usr/local/nginx/nginx.conf
+
 
 RUN rm -rf /var/cache/apk/* \
 && rm -rf /root/.cache \
