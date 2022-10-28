@@ -4,6 +4,8 @@ set -eux
 __DIR__=$(cd "$(dirname "$0")";pwd)
 cd ${__DIR__}
 
+# 安装jq，解析json
+test $(which jq | wc -l) -eq 0  && apt install -y jq
 
 # 获取最新容器tag
 container_latest_tag=$(curl -L -s 'https://hub.docker.com/v2/repositories/jingjingxyk/nginx/tags/?page_size=1&page=1&ordering=last_updated'|jq '."results"[]["name"]'| sed 's/\"//g')
