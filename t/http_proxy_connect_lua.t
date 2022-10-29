@@ -76,6 +76,12 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
+    #LUA_PACKAGE_PATH
+    # If you build nginx with lua-nginx-module, please enable           
+    # directive "lua_package_path". For more details, see:              
+    #  https://github.com/openresty/lua-nginx-module#installation
+    #lua_package_path "/path/to/lib/lua/?.lua;;";
+
     access_log off;
 
     resolver 127.0.0.1:18085 ipv6=off;      # NOTE: cannot connect ipv6 address ::1 in mac os x.

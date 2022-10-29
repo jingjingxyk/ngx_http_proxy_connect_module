@@ -78,6 +78,12 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
+    #LUA_PACKAGE_PATH
+    # If you build nginx with lua-nginx-module, please enable           
+    # directive "lua_package_path". For more details, see:              
+    #  https://github.com/openresty/lua-nginx-module#installation
+    #lua_package_path "/path/to/lib/lua/?.lua;;";
+
     log_format connect '$remote_addr - $remote_user [$time_local] "$request" '
                        '$status $body_bytes_sent var:$connect_host-$connect_port-$connect_addr '
                        ' c:$proxy_connect_connect_timeout,s:$proxy_connect_send_timeout,r:$proxy_connect_read_timeout';
