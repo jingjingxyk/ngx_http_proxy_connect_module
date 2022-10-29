@@ -174,6 +174,7 @@ Select patch
 ------------
 
 * Select right patch for building:
+ * All patch files have been included in `patch/` directory of this module. You dont need to download the patch directly from web page.
 
 | nginx version | enable REWRITE phase | patch |
 | --: | --: | --: |
@@ -185,7 +186,8 @@ Select patch
 | 1.15.4 ~ 1.16.x  | YES | [proxy_connect_rewrite_101504.patch](patch/proxy_connect_rewrite_101504.patch) |
 | 1.17.x ~ 1.18.0  | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
 | 1.19.x ~ 1.21.0  | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
-| 1.21.1 ~ 1.22.0  | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
+| 1.21.1 ~ 1.22.1  | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
+| 1.23.x           | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
 
 | OpenResty version | enable REWRITE phase | patch |
 | --: | --: | --: |
@@ -194,7 +196,6 @@ Select patch
 | 1.15.8 | YES | [proxy_connect_rewrite_101504.patch](patch/proxy_connect_rewrite_101504.patch) |
 | 1.17.8 | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
 | 1.19.3 | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
-| 1.21.1 | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
 | 1.21.4 | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
 
 
@@ -529,15 +530,17 @@ Nginx Compatibility
 
 The latest module is compatible with the following versions of nginx:
 
-* 1.19.6  (mainline version of 1.19.x ~ 1.20.x)
-* 1.18.0  (stable version of 1.18.x)
-* 1.16.1  (stable version of 1.16.x)
-* 1.14.2  (stable version of 1.14.x)
-* 1.12.1  (stable version of 1.12.x)
-* 1.10.3  (stable version of 1.10.x)
-* 1.8.1   (stable version of 1.8.x)
-* 1.6.3   (stable version of 1.6.x)
-* 1.4.7   (stable version of 1.4.x)
+* 1.23.2  (version of 1.23.x)
+* 1.22.1  (version of 1.22.x)
+* 1.20.2  (version of 1.20.x)
+* 1.18.0  (version of 1.18.x)
+* 1.16.1  (version of 1.16.x)
+* 1.14.2  (version of 1.14.x)
+* 1.12.1  (version of 1.12.x)
+* 1.10.3  (version of 1.10.x)
+* 1.8.1   (version of 1.8.x)
+* 1.6.3   (version of 1.6.x)
+* 1.4.7   (version of 1.4.x)
 
 OpenResty Compatibility
 -----------------------
@@ -548,6 +551,7 @@ The latest module is compatible with the following versions of OpenResty:
 * 1.15.8 (version: 1.15.8.1)
 * 1.17.8 (version: 1.17.8.2)
 * 1.19.3 (version: 1.19.3.1)
+* 1.21.4 (version: 1.21.4.1)
 
 Tengine Compatibility
 ---------------------
