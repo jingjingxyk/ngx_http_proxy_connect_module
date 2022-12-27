@@ -91,9 +91,9 @@ http {
     resolver 127.0.0.1:18085 ipv6=off;      # NOTE: cannot connect ipv6 address ::1 in mac os x.
 
     server {
-        listen  8081;
-        listen  8082;   # address.com
-        listen  8083;   # bind.conm
+        listen  127.0.0.1:8081;
+        listen  127.0.0.1:8082;   # address.com
+        listen  127.0.0.1:8083;   # bind.conm
         server_name server_8081;
         access_log off;
         location / {
@@ -111,18 +111,16 @@ http {
         proxy_connect;
         proxy_connect_allow 443 80 8081;
         proxy_connect_connect_timeout 10s;
-        proxy_connect_read_timeout 10s;
-        proxy_connect_send_timeout 10s;
-        proxy_connect_send_lowat 0;
+        proxy_connect_data_timeout 10s;
         proxy_connect_address $proxy_remote_address;
         proxy_connect_bind $proxy_local_address;
 
         if ($host = "address.com") {
-            set $proxy_remote_address "127.0.0.1:8082";
+            set $proxy_remote_address "127.0.0.01:8082";
         }
 
         if ($host = "bind.com") {
-            set $proxy_remote_address "127.0.0.1:8083";
+            set $proxy_remote_address "127.0.0.01:8083";
             set $proxy_local_address "127.0.0.1";   # NOTE that we cannot bind 127.0.0.3 in mac os x.
         }
 
@@ -131,7 +129,7 @@ http {
         }
 
         location / {
-            proxy_pass http://127.0.0.1:8081;
+            proxy_pass http://127.0.0.01:8081;
         }
 
         location = /hello {
@@ -219,7 +217,7 @@ http {
     access_log off;
 
     server {
-        listen  8082;
+        listen  127.0.0.1:8082;
         location / {
             return 200 "backend server: $remote_addr $server_port\n";
         }
@@ -234,7 +232,7 @@ http {
         proxy_connect;
         proxy_connect_allow all;
 
-        proxy_connect_address 127.0.0.1:8082;
+        proxy_connect_address 127.0.0.01:8082;
 
         if ($host = "if-return-skip.com") {
             return 200 "if-return\n";
@@ -609,9 +607,15 @@ sub start_bind {
             $i++ > 20 and last;
         }
         sleep 0.1;
-        $s and close($s) || die 'can not connect to DNS server';
+        $s or die "cannot connect to DNS server";
+        close($s) or die 'can not connect to DNS server';
 
         print "+ DNS server: working\n";
+
+        END {
+            print("+ try to stop\n");
+            stop_bind();
+        }
     }
 }
 

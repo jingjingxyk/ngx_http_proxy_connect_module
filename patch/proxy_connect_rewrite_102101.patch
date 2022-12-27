@@ -1,5 +1,5 @@
 diff --git a/src/http/ngx_http_core_module.c b/src/http/ngx_http_core_module.c
-index bad43ea5..b2cebb38 100644
+index c7463dc..41a0a7a 100644
 --- a/src/http/ngx_http_core_module.c
 +++ b/src/http/ngx_http_core_module.c
 @@ -957,6 +957,14 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
@@ -18,7 +18,7 @@ index bad43ea5..b2cebb38 100644
  
      if (rc == NGX_ERROR) {
 diff --git a/src/http/ngx_http_parse.c b/src/http/ngx_http_parse.c
-index 6460da29..7b209fa8 100644
+index 6460da2..7b209fa 100644
 --- a/src/http/ngx_http_parse.c
 +++ b/src/http/ngx_http_parse.c
 @@ -107,6 +107,14 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
@@ -163,11 +163,11 @@ index 6460da29..7b209fa8 100644
          case sw_spaces_before_uri:
  
 diff --git a/src/http/ngx_http_request.c b/src/http/ngx_http_request.c
-index 2d1845d0..ca1e5c0a 100644
+index 013b715..f4fa0a4 100644
 --- a/src/http/ngx_http_request.c
 +++ b/src/http/ngx_http_request.c
-@@ -1118,6 +1118,53 @@ ngx_http_process_request_line(ngx_event_t *rev)
-                 break;
+@@ -1102,6 +1102,55 @@ ngx_http_process_request_line(ngx_event_t *rev)
+                 r->http_protocol.len = r->request_end - r->http_protocol.data;
              }
  
 +#if (NGX_HTTP_PROXY_CONNECT)
@@ -214,13 +214,15 @@ index 2d1845d0..ca1e5c0a 100644
 +                }
 +
 +                r->connect_port_n = port;
-+            }
++
++                /* skip processing request uri */
++            } else
 +#endif
 +
-             if (r->schema_end) {
-                 r->schema.len = r->schema_end - r->schema_start;
-                 r->schema.data = r->schema_start;
-@@ -1709,6 +1756,19 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
+             if (ngx_http_process_request_uri(r) != NGX_OK) {
+                 break;
+             }
+@@ -1697,6 +1746,19 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
              r->schema_end = new + (r->schema_end - old);
          }
  
@@ -240,7 +242,7 @@ index 2d1845d0..ca1e5c0a 100644
          if (r->host_start) {
              r->host_start = new + (r->host_start - old);
              if (r->host_end) {
-@@ -2015,13 +2075,6 @@ ngx_http_process_request_header(ngx_http_request_t *r)
+@@ -2011,13 +2073,6 @@ ngx_http_process_request_header(ngx_http_request_t *r)
          }
      }
  
@@ -255,10 +257,10 @@ index 2d1845d0..ca1e5c0a 100644
          ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                        "client sent TRACE method");
 diff --git a/src/http/ngx_http_request.h b/src/http/ngx_http_request.h
-index 63576274..cac53b68 100644
+index b1269d2..a68bd03 100644
 --- a/src/http/ngx_http_request.h
 +++ b/src/http/ngx_http_request.h
-@@ -411,6 +411,15 @@ struct ngx_http_request_s {
+@@ -414,6 +414,15 @@ struct ngx_http_request_s {
      ngx_str_t                         exten;
      ngx_str_t                         unparsed_uri;
  
@@ -275,7 +277,7 @@ index 63576274..cac53b68 100644
      ngx_str_t                         http_protocol;
      ngx_str_t                         schema;
 diff --git a/src/http/ngx_http_variables.c b/src/http/ngx_http_variables.c
-index c25d80cc..8bb40d70 100644
+index 942dacd..6c59d6a 100644
 --- a/src/http/ngx_http_variables.c
 +++ b/src/http/ngx_http_variables.c
 @@ -163,6 +163,14 @@ static ngx_int_t ngx_http_variable_time_local(ngx_http_request_t *r,

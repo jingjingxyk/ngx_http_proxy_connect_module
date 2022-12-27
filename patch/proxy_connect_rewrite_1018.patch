@@ -1,8 +1,8 @@
 diff --git a/src/http/ngx_http_core_module.c b/src/http/ngx_http_core_module.c
-index 3671558..1d3ae77 100644
+index 6664fa6..0b2d433 100644
 --- a/src/http/ngx_http_core_module.c
 +++ b/src/http/ngx_http_core_module.c
-@@ -950,6 +950,14 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
+@@ -957,6 +957,14 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
      r->content_handler = NULL;
      r->uri_changed = 0;
  
@@ -18,7 +18,7 @@ index 3671558..1d3ae77 100644
  
      if (rc == NGX_ERROR) {
 diff --git a/src/http/ngx_http_parse.c b/src/http/ngx_http_parse.c
-index cfc42f9..02a4877 100644
+index 20ad89a..c2c3c31 100644
 --- a/src/http/ngx_http_parse.c
 +++ b/src/http/ngx_http_parse.c
 @@ -107,6 +107,14 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
@@ -177,11 +177,11 @@ index cfc42f9..02a4877 100644
          case sw_spaces_before_uri:
  
 diff --git a/src/http/ngx_http_request.c b/src/http/ngx_http_request.c
-index eb53996..a7a5263 100644
+index 136c461..d7adadd 100644
 --- a/src/http/ngx_http_request.c
 +++ b/src/http/ngx_http_request.c
-@@ -1092,6 +1092,53 @@ ngx_http_process_request_line(ngx_event_t *rev)
-                 break;
+@@ -1112,6 +1112,55 @@ ngx_http_process_request_line(ngx_event_t *rev)
+                 r->http_protocol.len = r->request_end - r->http_protocol.data;
              }
  
 +#if (NGX_HTTP_PROXY_CONNECT)
@@ -228,13 +228,15 @@ index eb53996..a7a5263 100644
 +                }
 +
 +                r->connect_port_n = port;
-+            }
++
++                /* skip processing uri */
++            } else
 +#endif
 +
-             if (r->schema_end) {
-                 r->schema.len = r->schema_end - r->schema_start;
-                 r->schema.data = r->schema_start;
-@@ -1671,6 +1718,19 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
+             if (ngx_http_process_request_uri(r) != NGX_OK) {
+                 break;
+             }
+@@ -1705,6 +1754,19 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
              r->schema_end = new + (r->schema_end - old);
          }
  
@@ -255,7 +257,7 @@ index eb53996..a7a5263 100644
              r->host_start = new + (r->host_start - old);
              if (r->host_end) {
 diff --git a/src/http/ngx_http_request.h b/src/http/ngx_http_request.h
-index 70c2d42..90f0934 100644
+index 6dfb4a4..7b5cbdb 100644
 --- a/src/http/ngx_http_request.h
 +++ b/src/http/ngx_http_request.h
 @@ -42,6 +42,10 @@
@@ -286,10 +288,10 @@ index 70c2d42..90f0934 100644
      ngx_str_t                         http_protocol;
      ngx_str_t                         schema;
 diff --git a/src/http/ngx_http_variables.c b/src/http/ngx_http_variables.c
-index e067cf0..4bb9260 100644
+index 942dacd..6c59d6a 100644
 --- a/src/http/ngx_http_variables.c
 +++ b/src/http/ngx_http_variables.c
-@@ -161,6 +161,14 @@ static ngx_int_t ngx_http_variable_time_local(ngx_http_request_t *r,
+@@ -163,6 +163,14 @@ static ngx_int_t ngx_http_variable_time_local(ngx_http_request_t *r,
  
  static ngx_http_variable_t  ngx_http_core_variables[] = {
  

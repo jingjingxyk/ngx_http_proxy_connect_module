@@ -93,7 +93,7 @@ http {
                        'fbt:$proxy_connect_first_byte_time,';
 
     access_log %%TESTDIR%%/connect.log connect;
-    error_log %%TESTDIR%%/connect_error.log error;
+    error_log %%TESTDIR%%/connect_error.log info;
 
     resolver 127.0.0.1:18085 ipv6=off;      # NOTE: cannot connect ipv6 address ::1 in mac os x.
 
@@ -105,13 +105,10 @@ http {
         proxy_connect;
         proxy_connect_allow all;
         proxy_connect_connect_timeout 10s;
-        proxy_connect_read_timeout 10s;
-        proxy_connect_send_timeout 10s;
-        proxy_connect_send_lowat 0;
+        proxy_connect_data_timeout 10s;
 
         set $proxy_connect_connect_timeout  "101ms";
-        set $proxy_connect_send_timeout     "102ms";
-        set $proxy_connect_read_timeout     "103ms";
+        set $proxy_connect_data_timeout     "103ms";
 
         if ($uri = "/200") {
             return 200;
@@ -122,26 +119,32 @@ http {
         }
         if ($host = "test-read-timeout.com") {
             set $proxy_connect_connect_timeout  "3ms";
-            set $proxy_connect_read_timeout     "1ms";
-            set $proxy_connect_send_timeout     "2ms";
+            set $proxy_connect_data_timeout     "1ms";
+        }
+
+        if ($request ~ "127.0.0.1:8082") {
+            # must be larger than 1s (server 8082 lua sleep(1s))
+            set $proxy_connect_data_timeout "1200ms";
+        }
+
+        if ($request ~ "127.0.0.1:8083") {
+            # must be larger than 0.5s (server 8082 lua sleep(0.5s))
+            set $proxy_connect_data_timeout "700ms";
+        }
+
+        if ($request ~ "127.0.0.01:8082") {
+            # must be less than 1s (server 8082 lua sleep(1s))
+            set $proxy_connect_data_timeout "800ms";
+        }
+
+        if ($request ~ "127.0.0.01:8083") {
+            # must be less than 0.5s (server 8082 lua sleep(1s))
+            set $proxy_connect_data_timeout "300ms";
         }
 
         location / {
-            proxy_pass http://127.0.0.1:8081;
+            proxy_pass http://127.0.0.01:8081;
         }
-
-        # used to output connect.log
-        location = /connect.log {
-            access_log off;
-            root %%TESTDIR%%/;
-        }
-
-        # used to output error.log
-        location = /connect_error.log {
-            access_log off;
-            root %%TESTDIR%%/;
-        }
-
     }
 
     server {
@@ -154,9 +157,11 @@ http {
     server {
         access_log off;
         listen 8082;
+
         rewrite_by_lua '
             ngx.sleep(1)
             ngx.say("8082 server fbt")
+            ngx.exit(ngx.HTTP_OK)
         ';
 
     }
@@ -166,6 +171,7 @@ http {
         rewrite_by_lua '
             ngx.sleep(0.5)
             ngx.say("8083 server fbt")
+            ngx.exit(ngx.HTTP_OK)
         ';
 
     }
@@ -192,51 +198,72 @@ if ($@) {
 #  exit
 #}
 
-my $log;
-my $errlog;
-
 TODO: {
     # $proxy_connect_connect_time has value, $proxy_connect_connect_time is "-"
     local $TODO = '# This case will pass, if connecting 8.8.8.8 timed out.';
     http_connect_request('test-connect-timeout.com', '8888', '/');
-    $log = http_get('/connect.log');
-    like($log, qr/"CONNECT test-connect-timeout.com:8888 HTTP\/1.1" 504 .+ resolve:\d+\.\d+,connect:-/,
+    like($t->read_file('connect.log'),
+         qr/"CONNECT test-connect-timeout.com:8888 HTTP\/1.1" 504 .+ resolve:\d+\.\d+,connect:-/,
         'connect timed out log: get $var & status=504');
-    $errlog = http_get('/connect_error.log');
-    like($errlog, qr/proxy_connect: upstream connect timed out \(peer:8\.8\.8\.8:8888\) while connecting to upstream/,
+    like($t->read_file('connect_error.log'),
+         qr/proxy_connect: upstream connect timed out \(peer:8\.8\.8\.8:8888\) while connecting to upstream/,
         'connect timed out error log');
 }
 
 # Both $proxy_connect_resolve_time & $proxy_connect_connect_time are empty string.
 http_get('/200');
-$log = http_get('/connect.log');
-like($log, qr/GET \/200.*resolve:,connect:,/,
+like($t->read_file('connect.log'),
+     qr/GET \/200.*resolve:,connect:,/,
      'For GET request, both $proxy_connect_resolve_time & $proxy_connect_connect_time are empty string');
 
 
 # Both $proxy_connect_resolve_time & $proxy_connect_connect_time have value.
 http_connect_request('127.0.0.1', '8081', '/');
-$log = http_get('/connect.log');
-like($log, qr/"CONNECT 127.0.0.1:8081 HTTP\/1.1" 200 .+ resolve:0\.\d+,connect:0\.\d+,/,
+like($t->read_file('connect.log'),
+     qr/"CONNECT 127.0.0.1:8081 HTTP\/1.1" 200 .+ resolve:0\.\d+,connect:0\.\d+,/,
      'For CONNECT request, test both $proxy_connect_resolve_time & $proxy_connect_connect_time');
 
 # DNS resolving fails. Both $proxy_connect_resolve_time & $proxy_connect_connect_time are "-".
 http_connect_request('non-existent-domain.com', '8081', '/');
-$log = http_get('/connect.log');
-like($log, qr/"CONNECT non-existent-domain.com:8081 HTTP\/1.1" 502 .+ resolve:-,connect:-,/,
+like($t->read_file('connect.log'),
+     qr/"CONNECT non-existent-domain.com:8081 HTTP\/1.1" 502 .+ resolve:-,connect:-,/,
      'For CONNECT request, test both $proxy_connect_resolve_time & $proxy_connect_connect_time');
-$errlog = http_get('/connect_error.log');
-like($errlog, qr/proxy_connect: non-existent-domain.com could not be resolved .+Host not found/, 'test error.log for 502 respsone');
+like($t->read_file('connect_error.log'),
+     qr/proxy_connect: non-existent-domain.com could not be resolved .+Host not found/,
+     'test error.log for 502 respsone');
 
 # test first byte time
 # fbt:~1s
-http_connect_request('127.0.0.1', '8082', '/');
-$log = http_get('/connect.log');
-like($log, qr/"CONNECT 127.0.0.1:8082 HTTP\/1.1" 200 .+ resolve:0\....,connect:0\....,fbt:1\....,/, 'test first byte time: 1s');
+my $r;
+$r = http_connect_request('127.0.0.1', '8082', '/');
+like($r, qr/8082 server fbt/, "test first byte time: 1s, receive response from backend server");
+like($t->read_file('connect.log'),
+     qr/"CONNECT 127.0.0.1:8082 HTTP\/1.1" 200 .+ resolve:0\....,connect:0\....,fbt:1\....,/,
+     'test first byte time: 1s');
+
 # fbt:~0.5s
-http_connect_request('127.0.0.1', '8083', '/');
-$log = http_get('/connect.log');
-like($log, qr/"CONNECT 127.0.0.1:8083 HTTP\/1.1" 200 .+ resolve:0\....,connect:0\....,fbt:0\.5..,/, 'test first byte time: 0.5s');
+$r = http_connect_request('127.0.0.1', '8083', '/');
+like($r, qr/8083 server fbt/, "test first byte time: 0.5s, receive response from backend server");
+
+like($t->read_file('connect.log'),
+     qr/"CONNECT 127.0.0.1:8083 HTTP\/1.1" 200 .+ resolve:0\....,connect:0\....,fbt:0\.5..,/,
+     'test first byte time: 0.5s');
+
+# test timeout
+$t->write_file('connect_error.log', "");
+$r = http_connect_request('127.0.0.01', '8082', '/');
+is($r, "", "test first byte time: 1s, timeout");
+#'2022/11/24 20:51:13 [info] 15239#0: *15 proxy_connect: connection timed out (110: Connection timed out) while proxying connection, client: 127.0.0.1, server: localhost, request: "CONNECT 127.0.0.01:8082 HTTP/1.1", host: "127.0.0.01"
+like($t->read_file('connect_error.log'),
+     qr/\[info\].* proxy_connect: connection timed out.+ request: "CONNECT 127\.0\.0\.01:8082 HTTP\/..."/,
+     'test first byte time: 1s, check timeout in error log');
+
+$t->write_file('connect_error.log', "");
+$r = http_connect_request('127.0.0.01', '8083', '/');
+is($r, "", "test first byte time: 0.5s, timeout");
+like($t->read_file('connect_error.log'),
+     qr/\[info\].* proxy_connect: connection timed out.+ request: "CONNECT 127\.0\.0\.01:8083 HTTP\/..."/,
+     'test first byte time: 1s, check timeout in error log');
 
 $t->stop();
 
@@ -386,9 +413,15 @@ sub start_bind {
             $i++ > 20 and last;
         }
         sleep 0.1;
-        $s and close($s) || die 'can not connect to DNS server';
+        $s or die "cannot connect to DNS server";
+        close($s) or die 'can not connect to DNS server';
 
         print "+ DNS server: working\n";
+
+        END {
+            print("+ try to stop\n");
+            stop_bind();
+        }
     }
 }
 

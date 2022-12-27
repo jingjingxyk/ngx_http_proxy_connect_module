@@ -24,8 +24,9 @@ Table of Contents
       * [proxy_connect](#proxy_connect)
       * [proxy_connect_allow](#proxy_connect_allow)
       * [proxy_connect_connect_timeout](#proxy_connect_connect_timeout)
-      * [proxy_connect_read_timeout](#proxy_connect_read_timeout)
-      * [proxy_connect_send_timeout](#proxy_connect_send_timeout)
+      * [proxy_connect_data_timeout](#proxy_connect_data_timeout)
+      * [proxy_connect_read_timeout(deprecated)](#proxy_connect_read_timeout)
+      * [proxy_connect_send_timeout(deprecated)](#proxy_connect_send_timeout)
       * [proxy_connect_address](#proxy_connect_address)
       * [proxy_connect_bind](#proxy_connect_bind)
       * [proxy_connect_response](#proxy_connect_response)
@@ -34,8 +35,9 @@ Table of Contents
       * [$connect_port](#connect_port)
       * [$connect_addr](#connect_addr)
       * [$proxy_connect_connect_timeout](#proxy_connect_connect_timeout-1)
-      * [$proxy_connect_read_timeout](#proxy_connect_read_timeout-1)
-      * [$proxy_connect_send_timeout](#proxy_connect_send_timeout-1)
+      * [$proxy_connect_data_timeout](#proxy_connect_data_timeout-1)
+      * [$proxy_connect_read_timeout(deprecated)](#proxy_connect_read_timeout-1)
+      * [$proxy_connect_send_timeout(deprecated)](#proxy_connect_send_timeout-1)
       * [$proxy_connect_resolve_time](#proxy_connect_resolve_time)
       * [$proxy_connect_connect_time](#proxy_connect_connect_time)
       * [$proxy_connect_first_byte_time](#proxy_connect_first_byte_time)
@@ -67,8 +69,7 @@ Configuration Example
      proxy_connect;
      proxy_connect_allow            443 563;
      proxy_connect_connect_timeout  10s;
-     proxy_connect_read_timeout     10s;
-     proxy_connect_send_timeout     10s;
+     proxy_connect_data_timeout     10s;
 
      # forward proxy for non-CONNECT request
      location / {
@@ -260,9 +261,20 @@ Test Suite
 
 ```bash
 $ hg clone http://hg.nginx.org/nginx-tests/
+
+# If you use latest lua-nginx-module that needs lua-resty-core and
+# lua-resty-lrucache, you should add "lua_package_path ...;" directive
+# into nginx.conf of test cases. You can use the following command:
+#
+# $ export TEST_NGINX_GLOBALS_HTTP='lua_package_path "/path/to/nginx/lib/lua/?.lua;;";'
+
 $ export TEST_NGINX_BINARY=/path/to/nginx/binary
 $ prove -v -I /path/to/nginx-tests/lib /path/to/ngx_http_proxy_connect_module/t/
 ```
+
+* For the complete process of building and testing this module, see:
+  * workflow files: [here](https://github.com/chobits/ngx_http_proxy_connect_module/tree/master/.github/workflows)
+  * runs from all workflows: [here](https://github.com/chobits/ngx_http_proxy_connect_module/actions)
 
 Error Log
 =========
@@ -318,6 +330,14 @@ Context: `server`
 
 Defines a timeout for establishing a connection with a proxied server.
 
+proxy_connect_data_timeout
+--------------------------
+
+Syntax: **proxy_connect_data_timeout `time`**  
+Default: `60s`  
+Context: `server`  
+
+Sets the timeout between two successive read or write operations on client or proxied server connections. If no data is transmitted within this time, the connection is closed.
 
 proxy_connect_read_timeout
 --------------------------
@@ -326,9 +346,9 @@ Syntax: **proxy_connect_read_timeout `time`**
 Default: `60s`  
 Context: `server`  
 
-Defines a timeout for reading a response from the proxied server.  
-The timeout is set only between two successive read operations, not for the transmission of the whole response.  
-If the proxied server does not transmit anything within this time, the connection is closed.
+Deprecated.
+
+It has the same function as the directive `proxy_connect_data_timeout` for compatibility. You can configure only one of the directives (`proxy_connect_data_timeout` or `proxy_connect_read_timeout`).
 
 proxy_connect_send_timeout
 --------------------------
@@ -337,9 +357,9 @@ Syntax: **proxy_connect_send_timeout `time`**
 Default: `60s`  
 Context: `server`  
 
-Sets a timeout for transmitting a request to the proxied server.  
-The timeout is set only between two successive write operations, not for the transmission of the whole request.  
-If the proxied server does not receive anything within this time, the connection is closed.
+Deprecated.
+
+It has no function.
 
 proxy_connect_address
 ---------------------
@@ -442,27 +462,32 @@ For example:
 # Set default value
 
 proxy_connect_connect_timeout   10s;
-proxy_connect_read_timeout      10s;
-proxy_connect_send_timeout      10s;
+proxy_connect_data_timeout      10s;
 
 # Overlap default value
 
 if ($host = "test.com") {
     set $proxy_connect_connect_timeout  "10ms";
-    set $proxy_connect_read_timeout     "10ms";
-    set $proxy_connect_send_timeout     "10ms";
+    set $proxy_connect_data_timeout     "10ms";
 }
 ```
+
+$proxy_connect_data_timeout
+---------------------------
+
+Get or set a timeout of [`proxy_connect_data_timeout` directive](#proxy_connect_data_timeout).
 
 $proxy_connect_read_timeout
 ---------------------------
 
-Get or set a timeout of [`proxy_connect_read_timeout` directive](#proxy_connect_read_timeout).
+Deprecated. 
+It still can get or set a timeout of [`proxy_connect_data_timeout` directive](#proxy_connect_data_timeout) for compatibility.
 
 $proxy_connect_send_timeout
 ---------------------------
 
-Get or set a timeout of [`proxy_connect_send_timeout` directive](#proxy_connect_send_timeout).
+Deprecated.
+It has no function.
 
 $proxy_connect_resolve_time
 ---------------------------

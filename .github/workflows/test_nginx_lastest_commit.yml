@@ -1,4 +1,4 @@
-name: test nginx
+name: test nginx latest commit
 
 on:
   push:
@@ -9,8 +9,6 @@ on:
 jobs:
   test-nginx:
     strategy:
-       matrix:
-         version: [1.22.1, 1.23.2]
        fail-fast: false
     runs-on: "ubuntu-20.04"
 
@@ -32,7 +30,6 @@ jobs:
     - name: install luajit
       working-directory: luajit2
       run: |
-         pwd
          make -j
          sudo make install
          ls /usr/local/lib/ |grep lua
@@ -44,9 +41,7 @@ jobs:
     - name: get nginx source
       run: |
          pwd
-         wget https://nginx.org/download/nginx-${{ matrix.version }}.tar.gz
-         tar xf nginx-${{ matrix.version }}.tar.gz
-         mv nginx-${{ matrix.version }} nginx
+         git clone https://github.com/nginx/nginx.git
     - name: build
       run: |
          pwd
@@ -54,7 +49,7 @@ jobs:
          patch -p1 < ../patch/proxy_connect_rewrite_102101.patch
          export LUAJIT_LIB=/usr/local/lib
          export LUAJIT_INC=/usr/local/include/luajit-2.1
-         ./configure --prefix=/opt/nginx --with-ld-opt="-lpcre -Wl,-rpath,$LUAJIT_LIB" --add-module=../ --add-module=../lua-nginx-module
+         ./auto/configure --prefix=/opt/nginx --with-ld-opt="-lpcre" --add-module=../ --add-module=../lua-nginx-module
          make -j
          sudo make install
     - name: install lua-resty-core

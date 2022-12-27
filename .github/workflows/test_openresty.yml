@@ -51,8 +51,9 @@ jobs:
     - name: test
       run: |
          pwd
-         sed -i -e "s+#LUA_PACKAGE_PATH+lua_package_path \"/opt/openresty/lualib//?.lua;;\";+" ./t/*.t
-         grep -i lua_package_path ./t/*.t
+         #sed -i -e "s+#LUA_PACKAGE_PATH+lua_package_path \"/opt/openresty/lualib//?.lua;;\";+" ./t/*.t
+         #grep -i lua_package_path ./t/*.t
+         export TEST_NGINX_GLOBALS_HTTP='lua_package_path "/opt/openresty/lualib/?.lua;;";'
          nginx_tests_lib_path=./nginx-tests/lib
          proxy_connect_test_cases=./t/
          #export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH

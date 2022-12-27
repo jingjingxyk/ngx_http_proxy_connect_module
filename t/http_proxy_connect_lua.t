@@ -265,9 +265,15 @@ sub start_bind {
             $i++ > 20 and last;
         }
         sleep 0.1;
-        $s and close($s) || die 'can not connect to DNS server';
+        $s or die "cannot connect to DNS server";
+        close($s) or die 'can not connect to DNS server';
 
         print "+ DNS server: working\n";
+
+        END {
+            print("+ try to stop $bind_pid\n");
+            stop_bind();
+        }
     }
 }
 
