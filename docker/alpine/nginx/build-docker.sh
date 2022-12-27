@@ -9,7 +9,7 @@ day=$(date -u +"%Y%m%dT%H%MZ")
 #day=$(date "+%Y%m%d%H")
 export DOCKER_BUILDKIT=1
 # buildx build --platform linux/aarch64
-image="jingjingxyk/nginx:alpine-1.21.1-connect-proxy-$day"
+image="jingjingxyk/nginx:alpine-1.23-connect-proxy-$day"
 
 
 # example use proxy download source code
