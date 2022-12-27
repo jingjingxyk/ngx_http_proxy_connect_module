@@ -1,5 +1,5 @@
 .idea
-docker/alpine/nginx-1.21/run-test.sh
-docker/alpine/nginx-1.21/nginx-default-domain.conf
-docker/alpine/nginx-1.21/nginx-default.conf
-docker/alpine/nginx-1.21/nginx-example-default-ok.conf
+docker/alpine/nginx/run-test.sh
+docker/alpine/nginx/nginx-default-domain.conf
+docker/alpine/nginx/nginx-default.conf
+docker/alpine/nginx/nginx-example-default-ok.conf

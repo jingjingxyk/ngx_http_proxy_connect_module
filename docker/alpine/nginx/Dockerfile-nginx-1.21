@@ -24,7 +24,9 @@ ENV  http_proxy=$PROXY_URL
 ENV  https_proxy=$PROXY_URL
 
 RUN wget http://nginx.org/download/nginx-1.21.1.tar.gz
+
 RUN tar -zxvf nginx-1.21.1.tar.gz
+
 RUN git clone --depth=1 --progress https://github.com/chobits/ngx_http_proxy_connect_module.git
 ENV  http_proxy=''
 ENV  https_proxy=''
@@ -79,7 +81,7 @@ zlib-dev \
 jansson-dev \
 make
 
-# RUN apk add iproute2 procps  net-tools bind-tools nftables ipset ipvsadm
+# RUN apk add iproute2 procps  net-tools bind-tools nftables ipset ipvsadm tcpdump conntrack-tools
 
 COPY --from=0 /usr/local/lib/  /usr/local/lib/
 ENV PATH=$PATH:/usr/local/lib
