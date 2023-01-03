@@ -64,8 +64,8 @@ WORKDIR /
 ENV PATH=$PATH:/usr/local/nginx/
 RUN mkdir -p /usr/local/nginx/etc/conf.d/
 
-ADD ./etc/nginx.conf /usr/local/nginx/etc/nginx.conf
-ADD ./etc/conf.d/default.conf /usr/local/nginx/etc/conf.d/default.conf
+# ADD ./etc/nginx.conf /usr/local/nginx/etc/nginx.conf
+# ADD ./etc/conf.d/default.conf /usr/local/nginx/etc/conf.d/default.conf
 
 
 FROM alpine:3.16
