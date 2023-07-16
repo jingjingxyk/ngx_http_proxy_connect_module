@@ -1,4 +1,4 @@
-FROM alpine:3.16
+FROM alpine:3.17
 
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
 && apk update && apk add  --no-cache ca-certificates \
@@ -24,8 +24,8 @@ ENV  http_proxy=$PROXY_URL
 ENV  https_proxy=$PROXY_URL
 
 
-RUN wget http://nginx.org/download/nginx-1.23.3.tar.gz
-RUN tar -zxvf nginx-1.23.3.tar.gz
+RUN wget http://nginx.org/download/nginx-1.25.1.tar.gz
+RUN tar -zxvf nginx-1.25.1.tar.gz
 RUN git clone --depth=1 --progress https://github.com/chobits/ngx_http_proxy_connect_module.git
 ENV  http_proxy=''
 ENV  https_proxy=''
@@ -36,7 +36,7 @@ ENV  https_proxy=''
 RUN addgroup -g 101 -S nginx \
 && adduser -S -D -H -u 101 -h /usr/local/nginx -s sbin/nologin -G nginx -g nginx nginx
 
-WORKDIR /nginx-1.23.3
+WORKDIR /nginx-1.25.1
 RUN patch -p1 < /ngx_http_proxy_connect_module/patch/proxy_connect_rewrite_102101.patch
 RUN ./configure \
         --prefix=/usr/local/nginx \
@@ -68,7 +68,7 @@ RUN mkdir -p /usr/local/nginx/etc/conf.d/
 # ADD ./etc/conf.d/default.conf /usr/local/nginx/etc/conf.d/default.conf
 
 
-FROM alpine:3.16
+FROM alpine:3.17
 
 RUN test -f /etc/apk/repositories.save || cp -f /etc/apk/repositories /etc/apk/repositories.save
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
