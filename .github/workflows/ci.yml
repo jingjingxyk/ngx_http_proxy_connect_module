@@ -10,7 +10,7 @@ jobs:
   test-nginx:
     strategy:
        matrix:
-         version: [1.22.1, 1.23.2]
+         version: [1.24.0, 1.25.1]
        fail-fast: false
     runs-on: "ubuntu-20.04"
 
@@ -62,6 +62,7 @@ jobs:
          pwd
          git clone https://github.com/openresty/lua-resty-core.git
          cd lua-resty-core
+         git checkout d2179dbcb3d6d77127462cadd40cca103d89a52a
          sudo make install PREFIX=/opt/nginx
          cd ..
          git clone https://github.com/openresty/lua-resty-lrucache.git

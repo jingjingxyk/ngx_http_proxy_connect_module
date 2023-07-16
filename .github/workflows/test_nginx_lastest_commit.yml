@@ -10,8 +10,13 @@ jobs:
   test-nginx:
     strategy:
        fail-fast: false
+       matrix:
+          compiler:
+            - { compiler: LLVM, CC: clang, CXX: clang++}
     runs-on: "ubuntu-20.04"
-
+    env:
+       CC: ${{ matrix.compiler.CC }}
+       CXX: ${{ matrix.compiler.CXX }}
     steps:
     - uses: actions/checkout@v3
     - name: get dependencies
@@ -57,6 +62,7 @@ jobs:
          pwd
          git clone https://github.com/openresty/lua-resty-core.git
          cd lua-resty-core
+         git checkout d2179dbcb3d6d77127462cadd40cca103d89a52a
          sudo make install PREFIX=/opt/nginx
          cd ..
          git clone https://github.com/openresty/lua-resty-lrucache.git

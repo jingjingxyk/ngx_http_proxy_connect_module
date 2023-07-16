@@ -10,9 +10,12 @@ Table of Contents
    * [name](#name)
    * [Example](#example)
       * [configuration example](#configuration-example)
-      * [example for curl](#example-for-curl)
-      * [example for browser](#example-for-browser)
+        * [example for curl](#example-for-curl)
+      * [configuration example for CONNECT request in https](#configuration-example-for-connect-request-in-https)
+        * [example for curl (CONNECT request in https)](#example-for-curl-connect-request-in-https)
+        * [example for browser](#example-for-browser)
       * [example for basic authentication](#example-for-basic-authentication)
+      * [example for proxying WebSocket](#example-for-proxying-websocket)
    * [Install](#install)
       * [select patch](#select-patch)
       * [build nginx](#build-nginx)
@@ -59,31 +62,41 @@ Configuration Example
 ---------------------
 
 ```nginx
- server {
-     listen                         3128;
+server {
+    listen                         3128;
 
-     # dns resolver used by forward proxying
-     resolver                       8.8.8.8;
+    # dns resolver used by forward proxying
+    resolver                       8.8.8.8;
 
-     # forward proxy for CONNECT request
-     proxy_connect;
-     proxy_connect_allow            443 563;
-     proxy_connect_connect_timeout  10s;
-     proxy_connect_data_timeout     10s;
+    # forward proxy for CONNECT requests
+    proxy_connect;
+    proxy_connect_allow            443 563;
+    proxy_connect_connect_timeout  10s;
+    proxy_connect_data_timeout     10s;
 
-     # forward proxy for non-CONNECT request
-     location / {
-         proxy_pass http://$host;
-         proxy_set_header Host $host;
-     }
- }
+    # defined by yourself for non-CONNECT requests
+    # Example: reverse proxy for non-CONNECT requests
+    location / {
+        proxy_pass http://$host;
+        proxy_set_header Host $host;
+    }
+}
 ```
+
+* The `resolver` directive MUST be configured globally in `server {}` block (or `http {}` block).
+* Any `location {}` block, `upstream {}` block and any other standard backend/upstream directives, such as `proxy_pass`, do not impact the functionality of this module. (The proxy_connect module only executes the logic for requests that use the CONNECT method and that have a data flow under this tunnel.)
+  * If you dont want to handle non-CONNECT requests, you can modify `location {}` block as following:
+    ```
+    location / {
+        return 403 "Non-CONNECT requests are forbidden";
+    }
+    ```
 
 Example for curl
 ----------------
 
-With above configuration, you can get any https website via HTTP CONNECT tunnel.
-A simple test with command `curl` is as following:
+With above configuration([configuration example](#configuration-example)
+), you can get any https website via HTTP CONNECT tunnel. A simple test with command `curl` is as following:
 
 ```
 $ curl https://github.com/ -v -x 127.0.0.1:3128
@@ -153,6 +166,164 @@ The sequence diagram of above example is as following:
     |                             |                          |
 ```
 
+
+configuration example for CONNECT request in HTTPS
+--------------------------------------------------
+
+```nginx
+server {
+    listen                         3128 ssl;
+
+    # self signed certificate generated via openssl command
+    ssl_certificate_key            /path/to/server.key;
+    ssl_certificate                /path/to/server.crt;
+    ssl_session_cache              shared:SSL:1m;
+
+    # dns resolver used by forward proxying
+    resolver                       8.8.8.8;
+
+    # forward proxy for CONNECT request
+    proxy_connect;
+    proxy_connect_allow            443 563;
+    proxy_connect_connect_timeout  10s;
+    proxy_connect_data_timeout     10s;
+
+    # defined by yourself for non-CONNECT request
+    # Example: reverse proxy for non-CONNECT requests
+    location / {
+        proxy_pass http://$host;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+example for curl (CONNECT request in https)
+-------------------------------------------
+
+
+With above configuration([configuration example for CONNECT request in https](#configuration-example-for-connect-request-in-https)), you can get any https website via HTTPS CONNECT tunnel(CONNECT request in https). A simple test with command `curl` is as following:
+
+Tips on using curl command:
+
+* `-x https://...` makes curl send CONNECT request in https.
+* `--proxy-insecure` disables ssl signature verification for ssl connection established with nginx proxy_connect server(`https://localhost:3128`), but it does not disable verification with proxied backend server(`https://nginx.org` in the example below).
+  * If you want to disable signature verfication with proxied backend server, you can use `-k` option.
+
+<details><summary>output of curl command :point_left: </summary>
+<p>
+
+```
+$ curl https://nginx.org/ -sv -o/dev/null -x https://localhost:3128 --proxy-insecure
+*   Trying 127.0.0.1:3128...
+* TCP_NODELAY set
+* Connected to localhost (127.0.0.1) port 3128 (#0)
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/ssl/certs/ca-certificates.crt
+  CApath: /etc/ssl/certs
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [112 bytes data]
+* TLSv1.2 (IN), TLS handshake, Certificate (11):
+{ [799 bytes data]
+* TLSv1.2 (IN), TLS handshake, Server key exchange (12):
+{ [300 bytes data]
+* TLSv1.2 (IN), TLS handshake, Server finished (14):
+{ [4 bytes data]
+* TLSv1.2 (OUT), TLS handshake, Client key exchange (16):
+} [37 bytes data]
+* TLSv1.2 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.2 (OUT), TLS handshake, Finished (20):
+} [16 bytes data]
+* TLSv1.2 (IN), TLS handshake, Finished (20):
+{ [16 bytes data]
+* SSL connection using TLSv1.2 / ECDHE-RSA-AES256-GCM-SHA384
+* ALPN, server accepted to use http/1.1
+* Proxy certificate:
+*  subject: C=AU; ST=Some-State; O=Internet Widgits Pty Ltd
+*  start date: Nov 25 08:36:38 2022 GMT
+*  expire date: Nov 25 08:36:38 2023 GMT
+*  issuer: C=AU; ST=Some-State; O=Internet Widgits Pty Ltd
+*  SSL certificate verify result: self signed certificate (18), continuing anyway.
+* allocate connect buffer!
+* Establish HTTP proxy tunnel to nginx.org:443
+} [5 bytes data]
+> CONNECT nginx.org:443 HTTP/1.1
+> Host: nginx.org:443
+> User-Agent: curl/7.68.0
+> Proxy-Connection: Keep-Alive
+>
+{ [5 bytes data]
+< HTTP/1.1 200 Connection Established
+< Proxy-agent: nginx
+<
+* Proxy replied 200 to CONNECT request
+* CONNECT phase completed!
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/ssl/certs/ca-certificates.crt
+  CApath: /etc/ssl/certs
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+* CONNECT phase completed!
+* CONNECT phase completed!
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [80 bytes data]
+* TLSv1.2 (IN), TLS handshake, Certificate (11):
+{ [2749 bytes data]
+* TLSv1.2 (IN), TLS handshake, Server key exchange (12):
+{ [300 bytes data]
+* TLSv1.2 (IN), TLS handshake, Server finished (14):
+{ [4 bytes data]
+* TLSv1.2 (OUT), TLS handshake, Client key exchange (16):
+} [37 bytes data]
+* TLSv1.2 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.2 (OUT), TLS handshake, Finished (20):
+} [16 bytes data]
+* TLSv1.2 (IN), TLS handshake, Finished (20):
+{ [16 bytes data]
+* SSL connection using TLSv1.2 / ECDHE-RSA-AES256-GCM-SHA384
+* ALPN, server accepted to use http/1.1
+* Server certificate:
+*  subject: CN=nginx.org
+*  start date: Dec  9 15:29:31 2022 GMT
+*  expire date: Mar  9 15:29:30 2023 GMT
+*  subjectAltName: host "nginx.org" matched cert's "nginx.org"
+*  issuer: C=US; O=Let's Encrypt; CN=R3
+*  SSL certificate verify ok.
+} [5 bytes data]
+> GET / HTTP/1.1
+> Host: nginx.org
+> User-Agent: curl/7.68.0
+> Accept: */*
+>
+{ [5 bytes data]
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 200 OK
+< Server: nginx/1.21.5
+< Date: Mon, 06 Mar 2023 06:05:24 GMT
+< Content-Type: text/html; charset=utf-8
+< Content-Length: 7488
+< Last-Modified: Tue, 28 Feb 2023 21:07:43 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=15
+< ETag: "63fe6d1f-1d40"
+< Accept-Ranges: bytes
+<
+{ [7488 bytes data]
+* Connection #0 to host localhost left intact
+```
+
+</p>
+</details>
+
 Example for browser
 -------------------
 
@@ -166,6 +337,13 @@ Example for Basic Authentication
 
 We can do access control on CONNECT request using nginx auth basic module.  
 See [this guide](https://github.com/chobits/ngx_http_proxy_connect_module/issues/42#issuecomment-502985437) for more details.
+
+
+Example for proxying WebSocket
+------------------------------
+
+* Note that nginx has its own WebSocket reverse proxy module, which is is not limited to the CONNECT tunnel, see [nginx.org doc: Nginx WebSocket proxying](https://nginx.org/en/docs/http/websocket.html) and [nginx.com blog: NGINX as a WebSocket Proxy](https://www.nginx.com/blog/websocket-nginx/).
+* This module enables the WebSocket protocol to work over the CONNECT tunnel, see https://github.com/chobits/ngx_http_proxy_connect_module/issues/267#issuecomment-1575449174
 
 
 Install
@@ -185,10 +363,11 @@ Select patch
 | 1.13.x ~ 1.14.x  | YES | [proxy_connect_rewrite_1014.patch](patch/proxy_connect_rewrite_1014.patch) |
 | 1.15.2           | YES | [proxy_connect_rewrite_1015.patch](patch/proxy_connect_rewrite_1015.patch) |
 | 1.15.4 ~ 1.16.x  | YES | [proxy_connect_rewrite_101504.patch](patch/proxy_connect_rewrite_101504.patch) |
-| 1.17.x ~ 1.18.0  | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
+| 1.17.x ~ 1.18.x  | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
 | 1.19.x ~ 1.21.0  | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
-| 1.21.1 ~ 1.22.1  | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
-| 1.23.x           | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
+| 1.21.1 ~ 1.22.x  | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
+| 1.23.x ~ 1.24.0  | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
+| 1.25.0 ~ 1.25.x  | YES | [proxy_connect_rewrite_102101.patch](patch/proxy_connect_rewrite_102101.patch) |
 
 | OpenResty version | enable REWRITE phase | patch |
 | --: | --: | --: |
@@ -555,7 +734,8 @@ Nginx Compatibility
 
 The latest module is compatible with the following versions of nginx:
 
-* 1.23.2  (version of 1.23.x)
+* 1.25.0  (mainline version of 1.25.x)
+* 1.24.0  (version of 1.24.x)
 * 1.22.1  (version of 1.22.x)
 * 1.20.2  (version of 1.20.x)
 * 1.18.0  (version of 1.18.x)
@@ -572,11 +752,11 @@ OpenResty Compatibility
 
 The latest module is compatible with the following versions of OpenResty:
 
-* 1.13.6 (version: 1.13.6.2)
-* 1.15.8 (version: 1.15.8.1)
-* 1.17.8 (version: 1.17.8.2)
+* 1.21.4 (version: 1.21.4.2 RC1)
 * 1.19.3 (version: 1.19.3.1)
-* 1.21.4 (version: 1.21.4.1)
+* 1.17.8 (version: 1.17.8.2)
+* 1.15.8 (version: 1.15.8.1)
+* 1.13.6 (version: 1.13.6.2)
 
 Tengine Compatibility
 ---------------------

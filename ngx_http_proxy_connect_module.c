@@ -667,7 +667,6 @@ ngx_http_proxy_connect_tunnel(ngx_http_request_t *r,
                    "proxy_connect: tunnel fu:%ui write:%ui",
                    from_upstream, do_write);
 
-    c = c;
     pc = u->peer.connection;
 
     if (from_upstream) {
@@ -2342,7 +2341,7 @@ ngx_http_proxy_connect_post_read_handler(ngx_http_request_t *r)
         if (!pclcf->accept_connect) {
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                           "proxy_connect: client sent connect method");
-            return NGX_HTTP_BAD_REQUEST;
+            return NGX_HTTP_NOT_ALLOWED;
         }
 
         /* init ctx */
